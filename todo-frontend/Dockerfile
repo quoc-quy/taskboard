@@ -15,9 +15,9 @@ RUN pnpm install --frozen-lockfile
 # Copy all application source code
 COPY . .
 
-# Declare build arguments for Next.js build-time variables
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Note: NEXT_PUBLIC_API_URL is intentionally NOT set here as a build ARG.
+# It is injected at container runtime via the 'environment' section in docker-compose,
+# so the same image can be reused across different deployment targets without rebuilding.
 
 # Build the Next.js production bundle
 RUN pnpm build
