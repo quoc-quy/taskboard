@@ -1,65 +1,277 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { AnimatePresence } from 'framer-motion';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { TaskDialog } from '@/components/task-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
+
+import { Header } from '@/components/dashboard/header';
+import { ProgressSection } from '@/components/dashboard/progress-section';
+import { FilterBar } from '@/components/dashboard/filter-bar';
+import { TaskItem } from '@/components/dashboard/task-item';
+import { EmptyState } from '@/components/dashboard/empty-state';
+import { Pagination } from '@/components/dashboard/pagination';
+
+import { todoApi } from '@/lib/api-service';
+import { Todo, TodoStatus } from '@/types/todo';
+
+export default function Dashboard() {
+  const queryClient = useQueryClient();
+
+  // State for Filters, Sorting, and Pagination
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<string>('all');
+  const [priority, setPriority] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
+  // Dialog states
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDeleteId, setTaskToDeleteId] = useState<string | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1); // Reset to page 1 on new search
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  const queryParams = {
+    page,
+    limit,
+    search: search || undefined,
+    status: status === 'all' ? undefined : status,
+    priority: priority === 'all' ? undefined : priority,
+    sortBy,
+    sortOrder,
+  };
+
+  // Queries
+  const { data: todosData, isLoading: isTodosLoading } = useQuery({
+    queryKey: ['todos', queryParams],
+    queryFn: () => todoApi.getAll(queryParams),
+  });
+
+  const { data: statsData } = useQuery({
+    queryKey: ['stats'],
+    queryFn: () => todoApi.getStats().then((res) => res.data),
+  });
+
+  // Reset pagination when filters change
+  const handleFilterChange = (type: 'status' | 'priority', val: string | null) => {
+    const value = val || 'all';
+    if (type === 'status') setStatus(value);
+    if (type === 'priority') setPriority(value);
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput('');
+    setSearch('');
+    setStatus('all');
+    setPriority('all');
+    setPage(1);
+  };
+
+  // Optimistic Update Mutation for Toggle Status
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
+      todoApi.update(id, {
+        status: completed ? TodoStatus.COMPLETED : TodoStatus.PENDING,
+      }),
+    onMutate: async ({ id, completed }) => {
+      await queryClient.cancelQueries({ queryKey: ['todos', queryParams] });
+      await queryClient.cancelQueries({ queryKey: ['stats'] });
+
+      const previousTodos = queryClient.getQueryData(['todos', queryParams]);
+      const previousStats = queryClient.getQueryData(['stats']);
+
+      if (previousTodos) {
+        queryClient.setQueryData(['todos', queryParams], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.map((todo: Todo) => {
+              if (todo.id === id) {
+                return {
+                  ...todo,
+                  status: completed ? TodoStatus.COMPLETED : TodoStatus.PENDING,
+                  completedAt: completed ? new Date().toISOString() : null,
+                };
+              }
+              return todo;
+            }),
+          };
+        });
+      }
+
+      if (previousStats) {
+        queryClient.setQueryData(['stats'], (old: any) => {
+          if (!old) return old;
+          const diff = completed ? 1 : -1;
+          const newCompleted = Math.max(0, old.completed + diff);
+          const newPending = Math.max(0, old.pending - diff);
+          const newTotal = old.total;
+          return {
+            ...old,
+            completed: newCompleted,
+            pending: newPending,
+            completionRate: newTotal > 0 ? Math.round((newCompleted / newTotal) * 100) : 0,
+          };
+        });
+      }
+
+      return { previousTodos, previousStats };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousTodos) {
+        queryClient.setQueryData(['todos', queryParams], context.previousTodos);
+      }
+      if (context?.previousStats) {
+        queryClient.setQueryData(['stats'], context.previousStats);
+      }
+      toast.error('Failed to update task status');
+    },
+    onSuccess: () => {
+      toast.success('Task updated successfully 🌸');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    },
+  });
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => todoApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      toast.success('Task deleted successfully ✨');
+      setIsDeleteDialogOpen(false);
+      setTaskToDeleteId(null);
+    },
+    onError: () => {
+      toast.error('Failed to delete task');
+    },
+  });
+
+  const handleDeleteConfirm = () => {
+    if (taskToDeleteId) {
+      deleteMutation.mutate(taskToDeleteId);
+    }
+  };
+
+  const handleEditClick = (task: Todo) => {
+    setSelectedTask(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    setSelectedTask(null);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setTaskToDeleteId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const isFiltered = !!search || status !== 'all' || priority !== 'all';
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="flex-1 flex flex-col bg-background/50 max-w-5xl mx-auto w-full px-4 py-8 md:px-6">
+      <Header onCreateClick={handleCreateClick} />
+
+      <ProgressSection
+        total={statsData?.total ?? 0}
+        completed={statsData?.completed ?? 0}
+        pending={statsData?.pending ?? 0}
+        completionRate={statsData?.completionRate ?? 0}
+      />
+
+      <FilterBar
+        searchInput={searchInput}
+        onSearchInputChange={setSearchInput}
+        status={status}
+        onStatusChange={(val) => handleFilterChange('status', val)}
+        priority={priority}
+        onPriorityChange={(val) => handleFilterChange('priority', val)}
+        sortBy={sortBy}
+        onSortByChange={(val) => setSortBy(val || 'createdAt')}
+        sortOrder={sortOrder}
+        onSortOrderToggle={() => setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC')}
+      />
+
+      <main className="flex-1 space-y-3 min-h-[300px] relative">
+        {isTodosLoading ? (
+          // Shimmer Skeleton Loading
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="border-border/30 bg-card rounded-3xl animate-pulse">
+              <CardContent className="flex items-center justify-between p-5">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="h-5.5 w-5.5 bg-muted rounded-lg" />
+                  <div className="space-y-2 flex-1 max-w-sm">
+                    <div className="h-4 bg-muted rounded-md w-2/3" />
+                    <div className="h-3.5 bg-muted rounded-md w-1/2" />
+                  </div>
+                </div>
+                <div className="h-8 w-20 bg-muted rounded-full" />
+              </CardContent>
+            </Card>
+          ))
+        ) : !todosData?.data || todosData.data.length === 0 ? (
+          <EmptyState isFiltered={isFiltered} onClearFilters={handleClearFilters} />
+        ) : (
+          <div className="space-y-3.5">
+            <AnimatePresence mode="popLayout">
+              {todosData.data.map((todo) => (
+                <TaskItem
+                  key={todo.id}
+                  todo={todo}
+                  onToggleStatus={(id, completed) =>
+                    toggleStatusMutation.mutate({ id, completed })
+                  }
+                  onEditClick={handleEditClick}
+                  onDeleteClick={handleDeleteClick}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </main>
+
+      {todosData?.meta && todosData.meta.totalPages > 1 && (
+        <Pagination
+          page={todosData.meta.page}
+          totalPages={todosData.meta.totalPages}
+          totalItems={todosData.meta.totalItems}
+          onPageChange={setPage}
+          hasPreviousPage={todosData.meta.hasPreviousPage}
+          hasNextPage={todosData.meta.hasNextPage}
+        />
+      )}
+
+      <TaskDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} task={selectedTask} />
+
+      <DeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
