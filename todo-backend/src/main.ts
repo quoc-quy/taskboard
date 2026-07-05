@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -8,6 +9,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   // Set global API prefix
   app.setGlobalPrefix('api');
@@ -18,9 +20,12 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  // Enable CORS
+  // Enable CORS — origin is read from CORS_ORIGIN env variable.
+  // Defaults to http://localhost:3001 for local development.
+  // Set a specific domain in production (e.g., https://yourdomain.com).
+  const corsOrigin = configService.getOrThrow<string>('CORS_ORIGIN');
   app.enableCors({
-    origin: true, // Allow all origins in dev, can be customized via config in production
+    origin: corsOrigin,
     credentials: true,
   });
 
@@ -54,7 +59,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT ?? 3000;
+  const port = configService.getOrThrow<number>('PORT');
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}/api/v1`);
   console.log(`Swagger documentation is available at: http://localhost:${port}/api/docs`);
