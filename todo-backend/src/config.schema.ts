@@ -9,4 +9,5 @@ export const configValidationSchema = Joi.object({
   DB_DATABASE: Joi.string().required(),
   THROTTLE_TTL: Joi.number().default(60),
   THROTTLE_LIMIT: Joi.number().default(100),
+  CORS_ORIGIN: Joi.string().default('http://localhost:3001'),
 });

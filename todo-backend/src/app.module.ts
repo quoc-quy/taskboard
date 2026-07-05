@@ -11,7 +11,7 @@ import { TodoModule } from './todo/todo.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`],
+      envFilePath: [`.env.${process.env.NODE_ENV || 'dev'}`],
       validationSchema: configValidationSchema,
       isGlobal: true,
     }),
