@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: todos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 93201017
+      POSTGRES_DB: todos
+    ports:
+      - '5432:5432'
+    volumes:
+      - todos-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d todos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - todos-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: todos-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '5050:80'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - todos-network
+
+volumes:
+  todos-pgdata:
+
+networks:
+  todos-network:
+    driver: bridge
+
