@@ -18,7 +18,7 @@ export class CreateTodoDto {
   @IsNotEmpty()
   @IsString()
   @MaxLength(150)
-  title: string;
+  title!: string;
 
   @ApiPropertyOptional({
     description: 'Detailed description of the task',

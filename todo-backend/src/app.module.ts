@@ -6,6 +6,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { configValidationSchema } from './config.schema';
+import { TodoModule } from './todo/todo.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { configValidationSchema } from './config.schema';
         },
       ],
     }),
+    TodoModule,
   ],
   controllers: [AppController],
   providers: [
