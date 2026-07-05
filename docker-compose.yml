@@ -34,9 +34,9 @@ services:
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
       - DB_DATABASE=todo_db
-      - DB_SYNCHRONIZE=true
-      - THROTTLER_TTL=60
-      - THROTTLER_LIMIT=60
+      - DB_SYNCHRONIZE=false
+      - THROTTLE_TTL=60
+      - THROTTLE_LIMIT=100
       - CORS_ORIGIN=http://localhost:3001
     depends_on:
       db:
@@ -48,13 +48,16 @@ services:
     build:
       context: ./todo-frontend
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
     container_name: todo-frontend-app
     ports:
       - "3001:3001"
     environment:
+      # API_URL_SERVER: used by Next.js SSR on the server side (container-to-container)
       - API_URL_SERVER=http://backend:3000/api/v1
+      # NEXT_PUBLIC_API_URL: used by the browser (client side).
+      # Must point to a host reachable from the end-user's browser.
+      # Override this with your public domain when deploying to a real server.
+      - NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
     depends_on:
       - backend
     networks:
