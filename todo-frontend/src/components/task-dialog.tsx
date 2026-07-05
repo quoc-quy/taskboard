@@ -76,6 +76,7 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
   });
 
   const priorityValue = watch('priority');
+  const descriptionValue = watch('description') || '';
 
   // Populate fields when editing
   useEffect(() => {
@@ -146,7 +147,7 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold tracking-tight">
             {isEditMode ? 'Edit Task' : 'Create Task'}
@@ -174,17 +175,22 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
 
           {/* Description Field */}
           <div className="space-y-1.5">
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description
-            </Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="description" className="text-sm font-medium">
+                Description
+              </Label>
+              <span className="text-[10px] font-semibold text-muted-foreground/80">
+                {descriptionValue.length} / 1000
+              </span>
+            </div>
             <Textarea
               id="description"
               placeholder="Provide a detailed description for this task..."
-              rows={3}
               disabled={isLoading}
-              className={
-                errors.description ? 'border-destructive focus-visible:ring-destructive' : 'resize-none'
-              }
+              maxLength={1000}
+              className={`h-[100px] resize-none overflow-y-auto ${
+                errors.description ? 'border-destructive focus-visible:ring-destructive' : ''
+              }`}
               {...register('description')}
             />
             {errors.description && (
