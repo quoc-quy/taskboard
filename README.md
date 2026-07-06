@@ -31,7 +31,7 @@ Dự án được cải tiến sâu sắc và áp dụng các giải pháp kỹ 
 *   **NestJS v11 & TypeScript**: Thiết kế Modular chuẩn kiến trúc SOLID.
 *   **TypeORM & PostgreSQL**: Quản lý thực thể cơ sở dữ liệu và đồng bộ hóa schema.
 *   **Validation**: `class-validator` & `Joi` schema validation cho biến môi trường.
-*   **Tài liệu RESTful API**: Tích hợp **Swagger UI** tại `/api/docs`.
+*   **Tài liệu RESTful API**: Tích hợp **Swagger UI** tại [/api/docs](https://taskboard-production-05fb.up.railway.app/api/docs).
 *   **Kiểm thử**: Jest Unit testing (Coverage đạt **>94%**) & Jest E2E API testing.
 
 ### 🔵 Frontend (Next.js Client)
