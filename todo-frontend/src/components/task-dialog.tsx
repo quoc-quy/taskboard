@@ -1,32 +1,32 @@
-'use client';
+'use client'
 
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import React, { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Todo, TodoPriority } from '@/types/todo';
-import { todoApi } from '@/lib/api-service';
+  SelectValue
+} from '@/components/ui/select'
+import { Todo, TodoPriority } from '@/types/todo'
+import { todoApi } from '@/lib/api-service'
 
 // Define Zod validation schema
 const taskSchema = z.object({
@@ -42,20 +42,20 @@ const taskSchema = z.object({
     .optional()
     .or(z.literal('')),
   priority: z.nativeEnum(TodoPriority),
-  dueDate: z.string().optional().or(z.literal('')),
-});
+  dueDate: z.string().optional().or(z.literal(''))
+})
 
-type TaskFormValues = z.infer<typeof taskSchema>;
+type TaskFormValues = z.infer<typeof taskSchema>
 
 interface TaskDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  task?: Todo | null; // If provided, we are in edit mode
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  task?: Todo | null // If provided, we are in edit mode
 }
 
 export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
-  const queryClient = useQueryClient();
-  const isEditMode = !!task;
+  const queryClient = useQueryClient()
+  const isEditMode = !!task
 
   // React Hook Form setup
   const {
@@ -64,19 +64,19 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors }
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       title: '',
       description: '',
       priority: TodoPriority.MEDIUM,
-      dueDate: '',
-    },
-  });
+      dueDate: ''
+    }
+  })
 
-  const priorityValue = watch('priority');
-  const descriptionValue = watch('description') || '';
+  const priorityValue = watch('priority')
+  const descriptionValue = watch('description') || ''
 
   // Populate fields when editing
   useEffect(() => {
@@ -86,64 +86,65 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
           title: task.title,
           description: task.description || '',
           priority: task.priority,
-          dueDate: task.dueDate ? task.dueDate.substring(0, 10) : '', // YYYY-MM-DD
-        });
+          // TIMEZONE ALIGNMENT: Input elements of type="date" expect YYYY-MM-DD format.
+          // Using task.dueDate.substring(0, 10) extracts dates in UTC, causing a timezone lurch
+          dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-CA') : '' // YYYY-MM-DD (local timezone)
+        })
       } else {
         reset({
           title: '',
           description: '',
           priority: TodoPriority.MEDIUM,
-          dueDate: '',
-        });
+          dueDate: ''
+        })
       }
     }
-  }, [open, task, reset]);
+  }, [open, task, reset])
 
   // Create Mutation
   const createMutation = useMutation({
     mutationFn: todoApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
-      toast.success('Task created successfully');
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ['todos'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+      toast.success('Task created successfully')
+      onOpenChange(false)
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.message || 'Failed to create task';
-      toast.error(msg);
-    },
-  });
+      const msg = error.response?.data?.message || 'Failed to create task'
+      toast.error(msg)
+    }
+  })
 
   // Update Mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      todoApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => todoApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
-      toast.success('Task updated successfully');
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ['todos'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+      toast.success('Task updated successfully')
+      onOpenChange(false)
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.message || 'Failed to update task';
-      toast.error(msg);
-    },
-  });
+      const msg = error.response?.data?.message || 'Failed to update task'
+      toast.error(msg)
+    }
+  })
 
   const onSubmit = (values: TaskFormValues) => {
     const formattedData = {
       ...values,
-      dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
-    };
+      dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null
+    }
 
     if (isEditMode && task) {
-      updateMutation.mutate({ id: task.id, data: formattedData });
+      updateMutation.mutate({ id: task.id, data: formattedData })
     } else {
-      createMutation.mutate(formattedData);
+      createMutation.mutate(formattedData)
     }
-  };
+  }
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading = createMutation.isPending || updateMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -167,9 +168,7 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
               {...register('title')}
             />
             {errors.title && (
-              <p className="text-xs font-medium text-destructive">
-                {errors.title.message}
-              </p>
+              <p className="text-xs font-medium text-destructive">{errors.title.message}</p>
             )}
           </div>
 
@@ -194,9 +193,7 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
               {...register('description')}
             />
             {errors.description && (
-              <p className="text-xs font-medium text-destructive">
-                {errors.description.message}
-              </p>
+              <p className="text-xs font-medium text-destructive">{errors.description.message}</p>
             )}
           </div>
 
@@ -214,9 +211,7 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
                 disabled={isLoading}
               >
                 <SelectTrigger id="priority" className="w-full">
-                  <span className="capitalize">
-                    {priorityValue}
-                  </span>
+                  <span className="capitalize">{priorityValue}</span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={TodoPriority.LOW}>Low</SelectItem>
@@ -257,5 +252,5 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

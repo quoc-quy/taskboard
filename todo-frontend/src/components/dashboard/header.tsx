@@ -1,41 +1,52 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/theme-toggle';
+import React, { useState, useEffect } from 'react'
+import { Sparkles, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface HeaderProps {
-  onCreateClick: () => void;
+  onCreateClick: () => void
 }
 
 const QUOTES = [
-  "Focus on being productive instead of busy. 🌟",
-  "Small progress is still progress. 🌱",
+  'Focus on being productive instead of busy. 🌟',
+  'Small progress is still progress. 🌱',
   "You got this! Let's make today count. ✨",
-  "Take a deep breath and start with one small step. 🌸",
-  "Do what you can, with what you have, where you are. 💛",
-  "Your future self will thank you for what you do today. 🚀",
-];
+  'Take a deep breath and start with one small step. 🌸',
+  'Do what you can, with what you have, where you are. 💛',
+  'Your future self will thank you for what you do today. 🚀'
+]
 
 export function Header({ onCreateClick }: HeaderProps) {
-  const [greeting, setGreeting] = useState('Welcome back');
-  const [dailyQuote, setDailyQuote] = useState('');
+  const [greeting, setGreeting] = useState('Welcome back')
+  const [greetingEmoji, setGreetingEmoji] = useState('')
+  const [dailyQuote, setDailyQuote] = useState('')
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good morning ☀️');
-    else if (hour < 18) setGreeting('Good afternoon ☕');
-    else setGreeting('Good evening 🌙');
+    const hour = new Date().getHours()
+    if (hour < 12) {
+      setGreeting('Good morning')
+      setGreetingEmoji('☀️')
+    } else if (hour < 18) {
+      setGreeting('Good afternoon')
+      setGreetingEmoji('☕')
+    } else {
+      setGreeting('Good evening')
+      setGreetingEmoji('🌙')
+    }
 
-    setDailyQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-  }, []);
+    setDailyQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)])
+  }, [])
 
   return (
     <header className="flex items-center justify-between border-b border-border/40 pb-6 mb-8">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 to-pink-500 dark:from-violet-400 dark:to-pink-400 bg-clip-text text-transparent">
-          {greeting}
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          <span className="bg-gradient-to-r from-violet-600 to-pink-500 dark:from-violet-400 dark:to-pink-400 bg-clip-text text-transparent">
+            {greeting}
+          </span>
+          {greetingEmoji && <span className="ml-2 inline-block select-none">{greetingEmoji}</span>}
         </h1>
         {dailyQuote && (
           <p className="text-sm text-muted-foreground mt-1 font-medium tracking-wide flex items-center gap-1.5">
@@ -53,5 +64,5 @@ export function Header({ onCreateClick }: HeaderProps) {
         </Button>
       </div>
     </header>
-  );
+  )
 }

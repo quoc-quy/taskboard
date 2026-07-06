@@ -5,15 +5,15 @@ services:
     image: postgres:16-alpine
     container_name: todo-postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=todo_db
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d todo_db"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d todo_db']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,14 +26,15 @@ services:
       dockerfile: Dockerfile
     container_name: todo-backend-api
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - PORT=3000
       - DB_HOST=db
       - DB_PORT=5432
       - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - DB_DATABASE=todo_db
+      # DB_SYNCHRONIZE=false: TypeORM auto-sync is intentionally disabled in production
       - DB_SYNCHRONIZE=false
       - THROTTLE_TTL=60
       - THROTTLE_LIMIT=100
@@ -50,13 +51,11 @@ services:
       dockerfile: Dockerfile
     container_name: todo-frontend-app
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       # API_URL_SERVER: used by Next.js SSR on the server side (container-to-container)
       - API_URL_SERVER=http://backend:3000/api/v1
       # NEXT_PUBLIC_API_URL: used by the browser (client side).
-      # Must point to a host reachable from the end-user's browser.
-      # Override this with your public domain when deploying to a real server.
       - NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
     depends_on:
       - backend

@@ -54,12 +54,12 @@ export class TodoQueryDto {
 
   @ApiPropertyOptional({
     description: 'Field to sort by',
-    enum: ['createdAt', 'dueDate', 'title', 'priority'],
+    enum: ['createdAt', 'updatedAt', 'dueDate', 'title', 'priority'],
     default: 'createdAt',
   })
   @IsOptional()
   @IsString()
-  @IsEnum(['createdAt', 'dueDate', 'title', 'priority'])
+  @IsEnum(['createdAt', 'updatedAt', 'dueDate', 'title', 'priority'])
   sortBy?: string = 'createdAt';
 
   @ApiPropertyOptional({
