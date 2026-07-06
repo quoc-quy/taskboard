@@ -83,7 +83,7 @@ todo-list-fullstack/
 ### Cách 1: Đóng gói Docker (Môi trường Local Production)
 Cách chạy nhanh nhất để kiểm tra tính đồng bộ của toàn bộ hệ thống dưới dạng Container độc lập:
 
-1.  Đứng tại thư mục gốc của dự án (`todo-list-fullstack`):
+1.  Đứng tại thư mục gốc của dự án (`taskboard`):
     ```bash
     docker compose up --build
     ```
