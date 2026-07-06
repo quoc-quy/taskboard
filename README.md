@@ -170,8 +170,6 @@ Dự án được tối ưu hóa cho mô hình Cloud Hosting miễn phí và chu
 *   **Database & Backend (PostgreSQL & NestJS)**: Triển khai trên **Railway** thông qua Dockerfile tự động nhận diện.
 *   **Frontend (Next.js 15)**: Triển khai trên **Vercel** thông qua Serverless Functions.
 
-> 📝 Hướng dẫn cấu hình biến môi trường, định tuyến CORS chi tiết từng bước xem tại **[deployment_guide.md](file:///C:/Users/Admin/.gemini/antigravity/brain/6a4cef04-cc51-4b8c-b912-33484c45009d/deployment_guide.md)**.
-
 ---
 
 ## 📊 Thiết Kế Cơ Sở Dữ Liệu & APIs
