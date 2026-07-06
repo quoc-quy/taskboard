@@ -7,6 +7,7 @@ export const configValidationSchema = Joi.object({
   DB_USERNAME: Joi.string().required(),
   DB_PASSWORD: Joi.string().required(),
   DB_DATABASE: Joi.string().required(),
+  DB_SYNCHRONIZE: Joi.boolean().default(false),
   THROTTLE_TTL: Joi.number().default(60),
   THROTTLE_LIMIT: Joi.number().default(100),
   CORS_ORIGIN: Joi.string().default('http://localhost:3001'),
