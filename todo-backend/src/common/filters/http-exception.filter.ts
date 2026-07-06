@@ -39,7 +39,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         }
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
+      // SECURITY SHIELD: Mask internal system error messages (like database query or ORM exceptions)
+      // in production environment to prevent structural information disclosure and raw query leaking.
+      message =
+        process.env.NODE_ENV === 'production'
+          ? 'Internal server error'
+          : exception.message;
     }
 
     // Log the detailed error on the server side

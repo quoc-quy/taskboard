@@ -3,12 +3,17 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
-  // Expose NEXT_PUBLIC_API_URL as a runtime-configurable environment variable.
-  // In standalone mode, Next.js reads this from the process environment at startup,
-  // so the same Docker image works across different deployment targets
-  // (local, staging, production) by simply changing the env var — no rebuild needed.
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1",
+  // ARCHITECTURE DECISION: Proxy client-side API requests to the backend server via Next.js rewrites.
+  // Next.js client-side bundles are compiled at build-time. Attempting to inject NEXT_PUBLIC_ env
+  // variables at container runtime will be ignored by the browser. Proxying relative paths (/api/v1/*)
+  // to API_URL_SERVER at runtime bypasses build-time variable baking and resolves CORS constraints.
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${process.env.API_URL_SERVER || "http://localhost:3000/api/v1"}/:path*`,
+      },
+    ];
   },
 };
 

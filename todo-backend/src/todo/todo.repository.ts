@@ -1,11 +1,28 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Todo } from './entities/todo.entity';
 import { TodoQueryDto } from './dto/todo-query.dto';
+
+/** Raw row shapes returned by TypeORM getRawMany() */
+interface StatusStatRow {
+  status: string;
+  count: string; // PostgreSQL COUNT returns a string
+}
+
+interface PriorityStatRow {
+  priority: string;
+  count: string;
+}
+
+/** Whitelist map for sortBy to prevent SQL injection at the query-builder level */
+const ALLOWED_SORT_FIELDS: Record<string, string> = {
+  createdAt: 'todo.createdAt',
+  updatedAt: 'todo.updatedAt',
+  dueDate: 'todo.dueDate',
+  title: 'todo.title',
+  priority: 'todo.priority',
+};
 
 @Injectable()
 export class TodoRepository {
@@ -37,16 +54,31 @@ export class TodoRepository {
       queryBuilder.andWhere('todo.priority = :priority', { priority });
     }
 
-    // Fuzzy searching by title or description (case-insensitive)
+    // Fuzzy searching by title or description using PostgreSQL native ILIKE (case-insensitive)
     if (search) {
       queryBuilder.andWhere(
-        '(LOWER(todo.title) LIKE LOWER(:search) OR LOWER(todo.description) LIKE LOWER(:search))',
+        '(todo.title ILIKE :search OR todo.description ILIKE :search)',
         { search: `%${search}%` },
       );
     }
 
-    // Sorting (safe from SQL Injection since DTO limits sortBy value to specific properties)
-    queryBuilder.orderBy(`todo.${sortBy}`, sortOrder);
+    // Sorting — resolved through ALLOWED_SORT_FIELDS whitelist for defense-in-depth
+    if (sortBy === 'priority') {
+      // DATABASE SORTING WEIGHTS: PostgreSQL sorts enum fields alphabetically or by definition index.
+      // Map enum priority strings to integer weights (high -> 3, medium -> 2, low -> 1) using a SQL CASE
+      // statement to ensure correct conceptual sorting.
+      queryBuilder.orderBy(
+        `CASE todo.priority
+          WHEN 'high' THEN 3
+          WHEN 'medium' THEN 2
+          WHEN 'low' THEN 1
+         END`,
+        sortOrder,
+      );
+    } else {
+      const sortField = ALLOWED_SORT_FIELDS[sortBy] ?? 'todo.createdAt';
+      queryBuilder.orderBy(sortField, sortOrder);
+    }
 
     // Pagination
     const skip = (page - 1) * limit;
@@ -82,14 +114,14 @@ export class TodoRepository {
       .select('todo.status', 'status')
       .addSelect('COUNT(todo.id)', 'count')
       .groupBy('todo.status')
-      .getRawMany();
+      .getRawMany<StatusStatRow>();
 
     const priorityStats = await this.repository
       .createQueryBuilder('todo')
       .select('todo.priority', 'priority')
       .addSelect('COUNT(todo.id)', 'count')
       .groupBy('todo.priority')
-      .getRawMany();
+      .getRawMany<PriorityStatRow>();
 
     return {
       statusStats: statusStats.map((s) => ({
