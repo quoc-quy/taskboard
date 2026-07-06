@@ -1,4 +1,4 @@
-# 🌸 Cozy Task Board - Production-Ready Fullstack System
+# 🌸 TaskBoard - Production-Ready Fullstack System
 
 [![Next.js 15](https://img.shields.io/badge/Frontend-Next.js%2015-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![NestJS 11](https://img.shields.io/badge/Backend-NestJS%2011-E0234E?style=flat-square&logo=nestjs)](https://nestjs.com/)
@@ -6,7 +6,7 @@
 [![Playwright](https://img.shields.io/badge/Testing-Playwright-2E8B57?style=flat-square&logo=playwright)](https://playwright.dev/)
 [![Docker](https://img.shields.io/badge/Orchestration-Docker-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 
-**Cozy Task Board** là hệ thống quản lý công việc (Task Management) fullstack hoàn chỉnh, được thiết kế theo trường phái **Modern Cozy Productivity** (thân thiện, ấm áp, tối giản, tăng năng suất). Dự án được đóng gói container hóa (Docker standalone), thiết lập hệ thống bảo mật nghiêm ngặt (security-first), tối ưu hóa luồng dữ liệu (RESTful compliance) và tích hợp bộ kiểm thử tự động toàn diện từ Unit Test tới E2E browser automation.
+**TaskBoard** là hệ thống quản lý công việc (Task Management) fullstack hoàn chỉnh, được thiết kế theo trường phái **Modern Cozy Productivity** (thân thiện, ấm áp, tối giản, tăng năng suất). Dự án được đóng gói container hóa (Docker standalone), thiết lập hệ thống bảo mật nghiêm ngặt (security-first), tối ưu hóa luồng dữ liệu (RESTful compliance) và tích hợp bộ kiểm thử tự động toàn diện từ Unit Test tới E2E browser automation.
 
 ---
 
